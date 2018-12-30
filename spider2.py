@@ -1,8 +1,9 @@
 ##########################################
 #获取知乎问题下所有回答、评论、子评论Json
 #回答统一放在answer文件夹内，按默认排序从0开始命名
-#评论放在comments文件夹对应answer文件夹下，0-14为精选评论（会与后面的重复）
+#评论放在comments文件夹对应answer文件夹下，前面为精选评论（会与后面的重复）
 #子评论放在child_comments文件夹下对应目录，没有子评论的不会创建comment文件夹
+#少数链接get不到、content乱码。
 ##########################################
 
 import requests
@@ -11,6 +12,7 @@ import sys
 import os
 
 questionId = 306537777
+startAns = 9
 headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:64.0) Gecko/20100101 Firefox/64.0'}
 
 ##Get URL
@@ -60,54 +62,59 @@ totalAns = ansJson['paging']['totals']
 
 ##Get Json
 #os.chdir('answers')
-for i in range(0,totalAns):
+for i in range(startAns,totalAns):
 #for i in range(0,2):
     print('Get answer'+str(i)+'.json')
-    ansUrl = getAnsUrl(i)	
+    ansUrl = getAnsUrl(i)
     ansResponse = requests.get(ansUrl,headers = headers)
     ansJson = json.loads(ansResponse.text)
-    ansId = ansJson['data'][0]['id']
-    
-    f = open("answer"+str(i)+".json","w",encoding='utf-8')
-    f.write(ansResponse.text)
-    f.close()
-    
-    ##Get Comment Num
-    comUrl = getComUrl(ansId,0)
-    comResponse = requests.get(comUrl,headers = headers)
-    comJson = json.loads(comResponse.text)
-    
-    
-    totalCom = comJson['paging']['totals']
-    os.chdir('../comments')
-    mkdir('answer'+str(i))
-    os.chdir('answer'+str(i))
-    # 0-14 for Selected Comments
-    for j in range(0,totalCom):
-        print('Get answer'+str(i)+'--comment'+str(j)+'.json')
-        comUrl = getComUrl(ansId,j)
-        comResponse = requests.get(comUrl,headers = headers)
-        comJson = json.loads(comResponse.text)
-        comId = comJson['data'][0]['id']
-        totalChCom = comJson['data'][0]['child_comment_count']
-        f = open("comment"+str(j)+".json","w",encoding='utf-8')
-        f.write(comResponse.text)
+    if ansJson['data']:
+        ansId = ansJson['data'][0]['id']
+        
+        f = open("answer"+str(i)+".json","w",encoding='utf-8')
+        f.write(ansResponse.text)
         f.close()
         
-        ##Get Child Comment 
-        if totalChCom > 0 :
-            os.chdir('../../child_comments/')
-            mkdir('answer'+str(i))
-            os.chdir('answer'+str(i))
-            mkdir('comment'+str(j))
-            os.chdir('comment'+str(j))
-            for k in range(0,totalChCom):
-                print('Get answer'+str(i)+'--comment'+str(j)+''+'--child_comment'+str(k)+'.json')
-                chComUrl = getChildComUrl(comId,k)
-                comResponse = requests.get(chComUrl,headers = headers)
-                f = open("child_comment"+str(k)+".json","w",encoding='utf-8')
+        ##Get Comment Num
+        comUrl = getComUrl(ansId,0)
+        comResponse = requests.get(comUrl,headers = headers)
+        comJson = json.loads(comResponse.text)
+        
+        
+        totalCom = comJson['paging']['totals']
+        os.chdir('../comments')
+        mkdir('answer'+str(i))
+        os.chdir('answer'+str(i))
+        # 0-14 for Selected Comments
+        if totalCom > 0:
+            for j in range(0,totalCom):
+                print('Get answer'+str(i)+'--comment'+str(j)+'.json')
+                comUrl = getComUrl(ansId,j)
+                comResponse = requests.get(comUrl,headers = headers)
+                f = open("comment"+str(j)+".json","w",encoding='utf-8')
                 f.write(comResponse.text)
                 f.close()
-            
-            os.chdir('../../../comments/answer'+str(i))
-    os.chdir('../../answers')
+                comJson = json.loads(comResponse.text)
+                if comJson['data']:
+                    comId = comJson['data'][0]['id']
+                    totalChCom = comJson['data'][0]['child_comment_count']
+                
+                
+                    ##Get Child Comment 
+                    if totalChCom > 0 :
+                        os.chdir('../../child_comments/')
+                        mkdir('answer'+str(i))
+                        os.chdir('answer'+str(i))
+                        mkdir('comment'+str(j))
+                        os.chdir('comment'+str(j))
+                        for k in range(0,totalChCom):
+                            print('Get answer'+str(i)+'--comment'+str(j)+''+'--child_comment'+str(k)+'.json')
+                            chComUrl = getChildComUrl(comId,k)
+                            comResponse = requests.get(chComUrl,headers = headers)
+                            f = open("child_comment"+str(k)+".json","w",encoding='utf-8')
+                            f.write(comResponse.text)
+                            f.close()
+                        
+                        os.chdir('../../../comments/answer'+str(i))
+            os.chdir('../../answers')
+
