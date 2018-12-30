@@ -12,7 +12,7 @@ import sys
 import os
 
 questionId = 306537777
-startAns = 9
+startAns = 1000
 headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:64.0) Gecko/20100101 Firefox/64.0'}
 
 ##Get URL
@@ -47,12 +47,11 @@ def mkdir(path):
     if not isExists:
         os.makedirs(path)
 
-mkdir('answers')
-mkdir('comments')
-mkdir('child_comments')
+mkdir('./answers')
+mkdir('./comments')
+mkdir('./child_comments')
 
 ##Get Answer Num
-os.chdir('answers')
 ansUrl = getAnsUrl(0)
 ansResponse = requests.get(ansUrl,headers = headers)
 ansJson = json.loads(ansResponse.text)
@@ -68,13 +67,12 @@ for i in range(startAns,totalAns):
     ansUrl = getAnsUrl(i)
     ansResponse = requests.get(ansUrl,headers = headers)
     ansJson = json.loads(ansResponse.text)
+    f = open("./answers/answer"+str(i)+".json","w",encoding='utf-8')
+    f.write(ansResponse.text)
+    f.close()
     if ansJson['data']:
         ansId = ansJson['data'][0]['id']
-        
-        f = open("answer"+str(i)+".json","w",encoding='utf-8')
-        f.write(ansResponse.text)
-        f.close()
-        
+
         ##Get Comment Num
         comUrl = getComUrl(ansId,0)
         comResponse = requests.get(comUrl,headers = headers)
@@ -82,39 +80,28 @@ for i in range(startAns,totalAns):
         
         
         totalCom = comJson['paging']['totals']
-        os.chdir('../comments')
-        mkdir('answer'+str(i))
-        os.chdir('answer'+str(i))
+        mkdir('./comments/answer'+str(i))
         # 0-14 for Selected Comments
         if totalCom > 0:
             for j in range(0,totalCom):
                 print('Get answer'+str(i)+'--comment'+str(j)+'.json')
                 comUrl = getComUrl(ansId,j)
                 comResponse = requests.get(comUrl,headers = headers)
-                f = open("comment"+str(j)+".json","w",encoding='utf-8')
+                f = open("./comments/answer"+str(i)+"/comment"+str(j)+".json","w",encoding='utf-8')
                 f.write(comResponse.text)
                 f.close()
                 comJson = json.loads(comResponse.text)
                 if comJson['data']:
                     comId = comJson['data'][0]['id']
                     totalChCom = comJson['data'][0]['child_comment_count']
-                
-                
                     ##Get Child Comment 
                     if totalChCom > 0 :
-                        os.chdir('../../child_comments/')
-                        mkdir('answer'+str(i))
-                        os.chdir('answer'+str(i))
-                        mkdir('comment'+str(j))
-                        os.chdir('comment'+str(j))
+                        mkdir('./child_comments/answer'+str(i))
+                        mkdir('./child_comments/answer'+str(i)+'/comment'+str(j))
                         for k in range(0,totalChCom):
                             print('Get answer'+str(i)+'--comment'+str(j)+''+'--child_comment'+str(k)+'.json')
                             chComUrl = getChildComUrl(comId,k)
                             comResponse = requests.get(chComUrl,headers = headers)
-                            f = open("child_comment"+str(k)+".json","w",encoding='utf-8')
+                            f = open("./child_comments/answer"+str(i)+"/comment"+str(j)+"/child_comment"+str(k)+".json","w",encoding='utf-8')
                             f.write(comResponse.text)
                             f.close()
-                        
-                        os.chdir('../../../comments/answer'+str(i))
-            os.chdir('../../answers')
-
