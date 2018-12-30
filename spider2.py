@@ -80,9 +80,9 @@ for i in range(startAns,totalAns):
         
         
         totalCom = comJson['paging']['totals']
-        mkdir('./comments/answer'+str(i))
         # 0-14 for Selected Comments
         if totalCom > 0:
+            mkdir('./comments/answer'+str(i))
             for j in range(0,totalCom):
                 print('Get answer'+str(i)+'--comment'+str(j)+'.json')
                 comUrl = getComUrl(ansId,j)
