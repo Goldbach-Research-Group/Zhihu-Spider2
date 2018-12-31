@@ -1,5 +1,5 @@
-
-
+##可以爬取数据，速度也稍微快了一点，但中文乱码问题比较严重
+##暂时改成只爬答案部分
 import requests
 import json
 import sys
@@ -7,8 +7,8 @@ import os
 
 questionId = 306537777     ##知乎问题ID
 isDefineRange = 0          ##设为0表示爬取全部，非0表示自定义爬取回答范围
-startAns = 44
-endAns = 45                  ##范围为[startAns,endAns)
+startAns = 50
+endAns = 300                  ##范围为[startAns,endAns)
 onceLimit = 20              ##每次最多下载个数，不能超过20
 headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:64.0) Gecko/20100101 Firefox/64.0'}
 
@@ -63,7 +63,10 @@ while i < endAns:
     i += limitCount
 #print(json.dumps(ansJson))
 
+with open('./answers.json','w',encoding='utf-8')as f:
+    f.write(json.dumps(ansJson,ensure_ascii=False))
 
+'''
 ##获取一级评论JSON
 countCom = 0
 comJson = {'totals':ansTotals,'startIndex':startAns,'data':{}}
@@ -92,6 +95,15 @@ for i in range(startAns,endAns):
             comJson['data'][i][j + k] = comTempJson['data'][k]
         j += limitCount
         countCom += limitCount
+
+                
+with open('./comments.json','w',encoding='utf-8')as f:
+    #s = json.dumps(comJson)
+    #s = json.dumps(comJson,ensure_ascii=False)
+    #f.write(s.encode('utf-8').decode('utf8'))
+    #f.write(s)
+    f.write(json.dumps(comJson,ensure_ascii=False))
+
 ##获取二级评论JSON
 countChCom = 0
 chComJson = {'totals':ansTotals,'startIndex':startAns,'data':{}}
@@ -99,35 +111,29 @@ chComJson = {'totals':ansTotals,'startIndex':startAns,'data':{}}
 for i in range(startAns,endAns):
     chComJson['data'][i] = {'totals':comJson['data'][i]['totals']}
     for j in range(comJson['data'][i]['totals']):
-        comId = comJson['data'][i][j]['id']
-        ##获取当前评论二级评论数
-        totalChCom = comJson['data'][i][j]['child_comment_count']
-        limitCount = onceLimit
-        chComJson['data'][i][j] = {'totals':totalChCom}
-        #print('i='+str(i)+'j='+str(j))
-        k = 0
-        while k < totalChCom:
-            if totalChCom - k < limitCount:
-                limitCount = totalChCom - k
-            print('Get answer['+str(i)+']-comment['+str(j)+']-child_comments['+str(k)+','+str(k+limitCount)+')')
-            chComUrl = getChildComUrl(comId,k,limitCount)
-            #print(chComUrl)
-            chComResponse = requests.get(chComUrl,headers = headers)
-            chComTempJson = json.loads(chComResponse.text)
-            for m in range(len(chComTempJson['data'])):
-                chComJson['data'][i][j][k + m] = chComTempJson['data'][m]
-            k += limitCount
-            countChCom += limitCount
-            
+        if j in comJson['data'][i]:
+            #comId = comJson.get('data').get(i).get(j).get('id')
+            comId = comJson['data'][i][j]['id']
+            ##获取当前评论二级评论数
+            totalChCom = comJson['data'][i][j]['child_comment_count']
+            limitCount = onceLimit
+            chComJson['data'][i][j] = {'totals':totalChCom}
+            #print('i='+str(i)+'j='+str(j))
+            k = 0
+            while k < totalChCom:
+                if totalChCom - k < limitCount:
+                    limitCount = totalChCom - k
+                print('Get answer['+str(i)+']-comment['+str(j)+']-child_comments['+str(k)+','+str(k+limitCount)+')')
+                chComUrl = getChildComUrl(comId,k,limitCount)
+                #print(chComUrl)
+                chComResponse = requests.get(chComUrl,headers = headers)
+                chComTempJson = json.loads(chComResponse.text)
+                for m in range(len(chComTempJson['data'])):
+                    chComJson['data'][i][j][k + m] = chComTempJson['data'][m]
+                k += limitCount
+                countChCom += limitCount
+
+
 with open('./child_comments.json','w',encoding='utf-8')as f:
     f.write(json.dumps(chComJson,ensure_ascii=False))
-with open('./comments.json','w',encoding='utf-8')as f:
-    #s = json.dumps(comJson)
-    #s = json.dumps(comJson,ensure_ascii=False)
-    #f.write(s.encode('utf-8').decode('utf8'))
-    #f.write(s)
-    f.write(json.dumps(comJson,ensure_ascii=False))
-with open('./answers.json','w',encoding='utf-8')as f:
-    f.write(json.dumps(ansJson,ensure_ascii=False))
-
-    
+'''
